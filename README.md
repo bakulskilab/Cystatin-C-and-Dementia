@@ -1,6 +1,6 @@
-# Cystatin-C-and-Prevalent-Dementia-Mediation-Interaction-Decomposition-Analysis
+# Cystatin-C and Prevalent Dementia Mediation-Interaction Decomposition Analysis
 
-Title: Decomposing Interaction and Mediating Effects of Race/Ethnicity and Circulating Cystatin C on Cognitive Status in the United States Health and Retirement Study
+## Title: Decomposing Interaction and Mediating Effects of Race/Ethnicity and Circulating Cystatin C on Cognitive Status in the United States Health and Retirement Study
 
 ## Abstract
 

@@ -1,0 +1,875 @@
+---
+title: "CysC Data Cleaning"
+author: "César Higgins"
+date: "9/8/2021"
+output:
+  pdf_document: default
+  code_folding: hide
+  highlight: pygments
+  keep_md: no
+  number_sections: yes
+  smart: yes
+  theme: sandstone
+  toc: yes
+  toc_float: yes
+  html_document: null
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(compareGroups)
+library(knitr)
+library(kableExtra)
+library(janitor)
+library(broom)
+library(lubridate)
+library(magrittr) # need to run every time you start R and want to use %>%
+library(kableExtra)
+library(gtsummary)
+library(foreign)
+library(gmodels)
+library(stringr)
+library(dplyr)  
+
+summarize = dplyr::summarize
+
+knitr::opts_chunk$set(
+  eval       = TRUE,    # whether to run code in code chunk
+  include    = TRUE,    # whether to include the chunk output
+  echo       = TRUE,   # Whether to show code chunk in final output
+  error      = TRUE,    # whether to display error messages
+  message    = FALSE,   # whether to preserve messages
+  warning    = FALSE,   # whether to preserve warnings
+  comment    = "#>",    # a character string to append at start
+                        # of each line of results in final document
+  tidy       = FALSE,   # whether to tidy code chunks for display
+  #dpi        = 96, 
+  #fig.width  = 6,       # consistent width for figures
+  #fig.asp    = 0.618,   # the golden ratio, can be adjusted in individual chunks
+  out.width  = "100%",   # controls the output size
+  fig.align  = "center" # give plot room to breathe
+)
+
+```
+
+
+
+```{r read data, results="hide"}
+
+rm(list = ls())
+setwd("~/Documents/Dementia project /NIH grant/Data")
+source_dir <- "/Users/cesarhiggins/Documents/Dementia project /NIH grant/Data/" 
+paste0(source_dir, "hrs_democoggen_wide20200910.Rda")
+load("hrs_democoggen_wide20200910.Rda") #This was the data set previously used by it was missing one observation :/
+
+dem <- hrs0910
+
+```
+
+
+# Cleaning Biomarkers Data Sets
+
+```{r read data from DBS}
+
+setwd("~/Documents/Dementia project /NIH grant/Data")
+load("biomk06.RData")
+load("biomk08.RData")
+biomk06 <- biomk06
+biomk08 <- biomk08
+
+myvars_bio_2006 <- c("HHID", "PN", "KA1C_ADJ", "KHDL_ADJ", "KTC_ADJ", "KCYSC_ADJ", "KCRP_ADJ") 
+myvars_bio_2008 <- c("HHID", "PN", "LA1C_ADJ", "LHDL_ADJ", "LTC_ADJ", "LCYSC_ADJ", "LCRP_ADJ") 
+
+biomk06_f <- dplyr::select(biomk06,myvars_bio_2006)  
+biomk08_f <- dplyr::select(biomk08,myvars_bio_2008)
+
+# Renaming Variables for each data set biomarker data 
+#2006 
+biomk06_f <- dplyr::rename(biomk06_f, a1c_2006=KA1C_ADJ , hdl_2006 = KHDL_ADJ,  tc_2006 = KTC_ADJ, cysc_2006 = KCYSC_ADJ, crp_2006 = KCRP_ADJ)
+
+# 2008 
+biomk08_f <- dplyr::rename(biomk08_f, a1c_2008 = LA1C_ADJ, hdl_2008 = LHDL_ADJ, tc_2008 = LTC_ADJ,cysc_2008 = LCYSC_ADJ, crp_2008 = LCRP_ADJ)
+
+```
+
+# Mergin Biomarkers Data Set with Cognition Data Set 
+
+```{r}
+
+merged_data <- left_join(dem, biomk06_f, by = c("HHID" = "HHID", "PN" = "PN")) 
+merged_data_f <- left_join(merged_data, biomk08_f, by = c("HHID" = "HHID", "PN" = "PN"))
+
+# Checking the dimensions of the data set to see that everything is fine 
+
+
+dem %>% 
+dim()
+
+biomk06_f %>% 
+dim()
+
+biomk08_f %>% 
+dim()
+
+merged_data %>% 
+dim()
+
+merged_data_f %>% 
+dim()
+```
+
+# Reducing the Dimension of the Data 
+
+```{r}
+
+myvars <- c("HHID", "PN", "a1c_2006", "hdl_2006", "tc_2006", "cysc_2006", "crp_2006", "a1c_2008", "hdl_2008", "tc_2008", "cysc_2008", "crp_2008", "DEGREE", "GENDER", "SCHLYRS", "HISPANIC", "RACE", "AD95", "AD96", "AD98", "AD00", "AD02", "AD04", "AD06", "AD08", "AD10", "AD12", "AD14", "expert_dem_98", "expert_dem_00", "expert_dem_02", "expert_dem_04", "expert_dem_06", "expert_dem_08", "expert_dem_10", "expert_dem_12", "expert_dem_14", "AAGE", "BAGE", "CAGE", "DAGE", "EAGE", "FAGE", "GAGE", "HAGE", "JAGE", "KAGE", "LAGE", "MAGE", "NAGE", "OAGE", "PAGE","totscore95", "totscore96", "totscore98", "totscore00", "totscore02", "totscore04", "totscore06", "totscore08", "totscore10", "totscore12", "totscore14", "R3HIBPE", "R4HIBPE", "R5HIBPE", "R6HIBPE", "R7HIBPE", "R8HIBPE", "R9HIBPE", "R10HIBPE", "R11HIBPE", "R12HIBPE", "smoke96", "smoke98", "smoke00", "smoke02", "smoke04", "smoke06", "smoke08", "smoke10", "smoke12", "smoke14","R3DIABE", "R4DIABE", "R5DIABE", "R6DIABE", "R7DIABE", "R8DIABE", "R9DIABE", "R10DIABE", "R11DIABE", "R12DIABE", "R3BMI", "R4BMI", "R5BMI", "R6BMI", "R7BMI", "R8BMI", "R9BMI", "R10BMI", "R11BMI", "R12BMI", "APOE2010_bin", "EA_APOE4", "AA_APOE4", "BIRTHYR", "STROKE95",  "STROKE96", "STROKE98", "STROKE00", "STROKE02", "STROKE04", "STROKE06", "STROKE08", "STROKE10", "STROKE12", "STROKE14", "DA009", "EA009", "FA009", "GA009", "HA009", "JA009", "KA009", "LA009", "MA009", "NA009", "OA009", "R8DRINKN", "R9DRINKN")
+
+dem_final <- dplyr::select(merged_data_f,myvars)
+
+dem_final %>% 
+  dim()
+
+```
+
+# Creating the Outcome Variable
+
+```{r}
+# Data cleaning 
+
+# Assigning Waves & Creating Outcome Variables 
+dem_final_f <- dem_final %>% 
+  mutate(wave_2006 = case_when(
+    (!is.na(a1c_2006) | !is.na(hdl_2006) | !is.na(tc_2006) | !is.na(cysc_2006) | !is.na(crp_2006)) ~ 1, 
+    TRUE ~ 0
+  )) %>% 
+  mutate(wave_2008 = case_when(
+    (!is.na(a1c_2008) | !is.na(hdl_2008) | !is.na(tc_2008) | !is.na(cysc_2008) | !is.na(crp_2008)) ~ 1, 
+    TRUE ~ 0
+  )) %>% 
+  mutate(wave = case_when(
+    wave_2006==1 ~ 2006,
+    wave_2008==1 ~ 2008,
+  )) %>% 
+  mutate(AD_06 = case_when(
+    AD06==3 ~ 0, 
+    AD06==2 ~ 1,
+    AD06==1 ~ 2
+  )) %>% 
+  mutate(AD_08 = case_when(
+    AD08==3 ~ 0,
+    AD08==2 ~ 1, 
+    AD08==1 ~ 2
+  )) %>% 
+  mutate(demdx= case_when(
+    wave==2006 ~ AD_06,
+    wave==2008 ~ AD_08)) 
+
+
+```
+
+# Covariates for Analysis 
+
+```{r}
+
+dem_final_ff <-  dem_final_f %>% 
+  mutate(age = wave-BIRTHYR) %>% 
+  mutate(education = SCHLYRS) %>% 
+  mutate(stroke = case_when(
+    wave==2006 ~ STROKE06,
+    wave==2008 ~ STROKE08
+  )) %>% 
+  mutate(hbp = case_when(
+    wave==2006 ~ R8HIBPE,
+    wave==2008 ~ R9HIBPE # had a mistake in here as R8HIBPE, just corrected it 
+  )) %>% 
+  mutate(t2db = case_when(
+    wave==2006 ~ R8DIABE,
+    wave==2008 ~ R9DIABE
+  )) %>% 
+  mutate(bmi = case_when(
+    wave==2006 ~ R8BMI,
+    wave==2008 ~ R9BMI
+  )) %>% 
+  mutate(smoking = case_when(
+    wave==2006 ~ smoke06,
+    wave==2008 ~ smoke08
+  )) %>% 
+  mutate(alcohol = case_when(
+    wave==2006 ~ R8DRINKN,
+    wave==2008 ~ R9DRINKN
+  )) %>% 
+  mutate(proxy = case_when(
+    wave==2006 ~ KA009,
+    wave==2008 ~ LA009,
+  )) %>% 
+  mutate(proxy_f= case_when(
+    proxy==1 ~ 1,
+    proxy==2 ~ 2, 
+    proxy==3 ~ 2
+  )) %>% 
+  mutate(totalscore= case_when(
+    wave==2006 ~ totscore06,
+    wave==2008 ~ totscore08
+  )) %>% 
+  mutate(race_f = case_when(
+    RACE==0 ~ "NA",
+    RACE==1 ~ "White",
+    RACE==2 ~ "Black",
+    RACE==7 ~ "Other")) %>% 
+  mutate(hispanic_f = case_when(
+      HISPANIC==1 | HISPANIC==2 | HISPANIC==3 ~ "Hispanic",
+      HISPANIC==5 ~ "Non-Hispanic",
+      HISPANIC==0 ~ "NA")) %>% 
+  mutate(baseline_crp = case_when(
+    wave==2006 ~ crp_2006,
+    wave==2008 ~ crp_2008
+  )) %>% 
+  mutate(baseline_hdl= case_when(
+    wave==2006 ~ hdl_2006,
+    wave==2008 ~ hdl_2008
+  )) %>% 
+  mutate(baseline_cysc = case_when(
+    wave==2006 ~ cysc_2006,
+    wave==2008 ~ cysc_2008
+  )) %>% 
+  mutate(baseline_tc = case_when(
+    wave==2006 ~ tc_2006,
+    wave==2008 ~ tc_2008
+  )) %>% 
+  mutate(baseline_a1c = case_when(
+    wave==2006 ~ a1c_2006,
+    wave==2008 ~ a1c_2008
+  ))
+
+ dem_final_fff <- dem_final_ff %>% 
+  mutate(race_f = na_if(race_f, "NA")) %>% 
+  mutate(hispanic_f = na_if(hispanic_f, "NA")) %>% 
+  mutate(race_ff = case_when(
+    race_f=="White" & hispanic_f=="Non-Hispanic" ~ "White-NH",
+    race_f=="Black" & hispanic_f=="Non-Hispanic" ~ "Black-NH",
+    race_f=="Other" & hispanic_f=="Non-Hispanic" ~ "Other-NH",
+    hispanic_f=="Hispanic" ~ "Hispanic")) %>% 
+  mutate(gender_f = case_when(
+    GENDER==1 ~ "Male",
+    GENDER==2 ~ "Female")) %>% 
+  mutate(edu = case_when(
+    DEGREE==0 | DEGREE==1 | DEGREE==2 ~ "HS or <",
+    DEGREE==3 | DEGREE==4 | DEGREE==9 ~ "College/Some",
+    DEGREE==5 | DEGREE==6 ~ "> College")) 
+   
+ 
+myvars_2 <- c("HHID", "PN","race_ff", "gender_f", "edu", "education", "wave", "age", "alcohol", "stroke", "hbp", "t2db", "bmi", "smoking", "alcohol", "proxy_f", "totalscore", "baseline_crp", "baseline_hdl", "baseline_tc", "baseline_cysc", "baseline_a1c", "demdx", "APOE2010_bin") 
+dem_data_ffff <- dplyr::select(dem_final_fff,myvars_2)  
+```
+
+
+
+# Sample Size 
+
+```{r}
+
+complete_data <- dem_data_ffff
+
+complete_crp <- complete_data %>% 
+  filter(baseline_crp!="NA")  # N = 12,394, we lost 670 from the 13,064
+ 
+complete_hdl <- complete_crp %>% 
+  filter(baseline_hdl!="NA") # N = 10,458 
+
+complete_tc <- complete_hdl %>% 
+   filter(baseline_tc!="NA") # N= 10,455
+
+complete_cysc <- complete_tc %>% 
+   filter(baseline_cysc!="NA") # N= 10,403
+
+complete_a1c <- complete_cysc %>% 
+  filter(baseline_a1c!="NA") # N=10,380
+
+complete_data_biomarkers <- complete_data %>% 
+filter(baseline_crp!="NA" & baseline_hdl!="NA" & baseline_tc!="NA" & baseline_cysc!="NA" & baseline_a1c!="NA") # same as complete_a1c, therefore we lost 2,694 without complete biomarker data 
+
+
+complete_demographics <- complete_data_biomarkers %>% 
+  filter(race_ff!="NA" & gender_f!="NA" & education!="NA" & age!="NA")  # N = 10,362 , we passed from 10380 to 10362, we lost 18 people 
+
+complete_health <- complete_demographics %>% 
+  filter(alcohol!="NA" & stroke!="NA", hbp!="NA", t2db!="NA", bmi!="NA", smoking!="NA") # N = 10,147 we lost 215
+
+complete_outcomes <- complete_health %>%  
+  filter(demdx!="NA" & totalscore!="NA") # N = 10,147
+
+complete_genetics <- complete_outcomes %>% 
+  filter(APOE2010_bin!="NA") # 9,298
+
+
+# Using na.omit and not including the mutually exclusive outcomes variable only demdx and totalscore 
+
+myvars_3 <- c("HHID", "PN","race_ff", "gender_f", "edu", "education", "wave", "age", "alcohol", "stroke", "hbp", "t2db", "bmi", "smoking", "alcohol", "proxy_f", "totalscore", "baseline_crp", "baseline_hdl", "baseline_tc", "baseline_cysc", "baseline_a1c", "demdx") 
+
+complete_data_filter <- dplyr::select(complete_data,myvars_3)  
+
+data_nm <- complete_data_filter%>% na.omit() # I get the same number of observation with full sample 10,147
+
+# Sample Including Genetics APOE-information 
+
+myvars_4 <- c("HHID", "PN","race_ff", "gender_f", "edu", "education", "wave", "age", "alcohol", "stroke", "hbp", "t2db", "bmi", "smoking", "alcohol", "proxy_f", "totalscore", "baseline_crp", "baseline_hdl", "baseline_tc", "baseline_cysc", "baseline_a1c", "demdx", "APOE2010_bin")
+
+complete_data_filter_apoe <- dplyr::select(complete_data,myvars_4)  
+
+data_nm_apoe <- complete_data_filter_apoe%>% na.omit() # I get full sample 9,298
+
+#save(data_nm, file = "full_data.RData")
+#save(data_nm_apoe, file = "full_data_apoe.RData")
+
+
+```
+
+
+# Importing Study Data Complete Sample Size and Creating Outcome Variables 
+
+
+```{r}
+# Data cleaning 
+
+rm(list = ls())
+setwd("~/Documents/Dementia project /NIH grant/Data")
+load("full_data.RData")
+full_data = data_nm
+
+full_data <- full_data %>% 
+ mutate(demdx_f = case_when(
+    demdx==0 ~ "NORMAL",
+    demdx==2 ~ "DEMENTIA", 
+    demdx==1 ~ "NA"
+  )) %>% 
+  mutate(cinddx= case_when(
+    demdx==0 ~ "NORMAL",
+    demdx==1 ~ "CIND", 
+    demdx==2 ~ "NA"
+  )) %>% 
+  mutate(demdx_f = na_if(demdx_f, "NA")) %>% 
+  mutate(cinddx = na_if(cinddx, "NA")) 
+
+full_data <- full_data %>% 
+  mutate_if(is.character,as.factor) %>% 
+  mutate(cinddx_f = case_when(
+    cinddx=="NORMAL" ~ 0, 
+    cinddx=="CIND" ~ 1
+  )) %>% 
+  mutate(demdx_ff = case_when(
+    demdx_f=="NORMAL" ~ 0, 
+    demdx_f=="DEMENTIA" ~ 1
+  )) %>%  
+  mutate(race_ff = na_if(race_ff, "Other-NH")) %>% 
+   filter(race_ff!='NA')
+
+```
+
+
+# Quartiles of CysC Distribution in Study Sample 
+
+```{r}
+
+
+full_data %>% 
+  summarize("Obs" = n(),
+  "Mean" =mean(baseline_cysc,na.rm=TRUE),
+  "SD" = sd(baseline_cysc,na.rm=TRUE),
+  "Min" = min(baseline_cysc, na.rm=TRUE),
+  "Max" = max(baseline_cysc, na.rm=TRUE),
+  "25%" = quantile(baseline_cysc, probs=0.25, na.rm=TRUE), "50%" = quantile(baseline_cysc, probs=0.50, na.rm=TRUE), "75%" = quantile(baseline_cysc, probs=0.75, na.rm=TRUE),
+  "IQR" = IQR(baseline_cysc, na.rm=TRUE)) %>% 
+  na.omit() 
+
+full_data <-  dplyr::rename(full_data, race=race_ff, gender=gender_f) 
+
+full_data <- full_data %>% 
+  mutate(cysc_cat = case_when(
+    baseline_cysc <= 0.86 ~ 0, 
+    baseline_cysc >0.86 & baseline_cysc <= 1 ~ 1,
+    baseline_cysc > 1 & baseline_cysc <= 1.24 ~ 2, 
+    baseline_cysc > 1.24 ~ 3
+  )) %>%  
+  mutate_at(vars(cysc_cat), as.factor) %>% 
+    mutate(cysc_cat_75 = case_when(
+    baseline_cysc <= 1.24 ~ 0, 
+    baseline_cysc > 1.24 ~ 1
+  )) %>%  
+  mutate_at(vars(cysc_cat_75), as.factor)  %>%  
+  mutate(anydem_1 = case_when(
+    demdx_ff==1 | cinddx_f==1 ~ 1, 
+    TRUE ~ 0 )) %>% 
+    mutate_at(vars(anydem_1), as.factor) %>% 
+  mutate(dicho_race = case_when(
+    race=="White-NH" ~ 0, 
+    race=="Black-NH" ~ 1
+  )) %>%  
+  mutate(dicho_race_h = case_when(
+   race=="White-NH" ~ 0, 
+   race=="Hispanic" ~ 1
+  )) %>% 
+  mutate_at(vars(dicho_race), as.factor) %>% 
+  mutate_at(vars(dicho_race_h), as.factor) %>% 
+  mutate(int_cysc = case_when(
+    dicho_race==0 & cysc_cat_75==0 ~ 0, 
+    dicho_race==0 & cysc_cat_75==1 ~ 1,
+    dicho_race==1 & cysc_cat_75==0 ~ 2,
+    dicho_race==1 & cysc_cat_75==1 ~ 3
+  )) %>% 
+  mutate_at(vars(int_cysc), as.factor) %>%  
+  mutate(int_cysc_h = case_when(
+    dicho_race_h==0 & cysc_cat_75==0 ~ 0, 
+    dicho_race_h==0 & cysc_cat_75==1 ~ 1,
+    dicho_race_h==1 & cysc_cat_75==0 ~ 2,
+    dicho_race_h==1 & cysc_cat_75==1 ~ 3
+  )) %>% 
+  mutate_at(vars(int_cysc_h), as.factor)
+
+full_data <- full_data %>% 
+    mutate(cysc_race = case_when(
+      int_cysc==0 ~ "White & Low CysC",
+      int_cysc==1 ~ "White & High CysC",
+      int_cysc==2 ~ "Black & Low CysC",
+      int_cysc==3 ~ "Black & High CysC"
+    )) %>% 
+  mutate_at(vars(cysc_race), as.factor) %>% 
+    mutate(cysc_h = case_when(
+      int_cysc_h==0 ~ "White & Low CysC",
+      int_cysc_h==1 ~ "White & High CysC",
+      int_cysc_h==2 ~ "Hispanic & Low CysC",
+      int_cysc_h==3 ~ "Hispanic & High CysC"
+    )) %>% 
+    mutate_at(vars(cysc_h), as.factor) %>% 
+  mutate(baseline_tc_hdl=baseline_tc/baseline_hdl)
+
+
+
+#save(full_data, file = "Model_Data_CysC.RData") #/*HERE THE DATA WAS SAVED*/
+
+```
+
+
+# Prepare Data for Genetic Model 
+
+```{r}
+rm(list = ls())
+setwd("~/Documents/Dementia project /NIH grant/Data")
+load("full_data_apoe.RData")
+
+full_data_apoe = data_nm_apoe
+
+full_data_apoe <- full_data_apoe %>% 
+ mutate(demdx_f = case_when(
+    demdx==0 ~ "NORMAL",
+    demdx==2 ~ "DEMENTIA", 
+    demdx==1 ~ "NA"
+  )) %>% 
+  mutate(cinddx= case_when(
+    demdx==0 ~ "NORMAL",
+    demdx==1 ~ "CIND", 
+    demdx==2 ~ "NA"
+  )) %>% 
+  mutate(demdx_f = na_if(demdx_f, "NA")) %>% 
+  mutate(cinddx = na_if(cinddx, "NA")) 
+
+full_data_apoe <- full_data_apoe %>% 
+  mutate_if(is.character,as.factor) %>% 
+  mutate(cinddx_f = case_when(
+    cinddx=="NORMAL" ~ 0, 
+    cinddx=="CIND" ~ 1
+  )) %>% 
+  mutate(demdx_ff = case_when(
+    demdx_f=="NORMAL" ~ 0, 
+    demdx_f=="DEMENTIA" ~ 1
+  )) %>% 
+  mutate(race_ff = na_if(race_ff, "Other-NH")) %>% 
+   filter(race_ff!='NA')
+
+```
+
+
+# Quartiles of CysC Distribution for APOE Study Sample 
+
+```{r}
+
+full_data_apoe %>% 
+  summarize("Obs" = n(),
+  "Mean" =mean(baseline_cysc,na.rm=TRUE),
+  "SD" = sd(baseline_cysc,na.rm=TRUE),
+  "Min" = min(baseline_cysc, na.rm=TRUE),
+  "Max" = max(baseline_cysc, na.rm=TRUE),
+  "25%" = quantile(baseline_cysc, probs=0.25, na.rm=TRUE), "50%" = quantile(baseline_cysc, probs=0.50, na.rm=TRUE), "75%" = quantile(baseline_cysc, probs=0.75, na.rm=TRUE),
+  "IQR" = IQR(baseline_cysc, na.rm=TRUE)) %>% 
+  na.omit() 
+
+full_data_apoe <-  dplyr::rename(full_data_apoe, race=race_ff, gender=gender_f) 
+
+full_data_apoe <- full_data_apoe %>% 
+  mutate(cysc_cat = case_when(
+    baseline_cysc <= 0.84 ~ 0, 
+    baseline_cysc >0.84 & baseline_cysc <= 1 ~ 1,
+    baseline_cysc > 1 & baseline_cysc <= 1.24 ~ 2, 
+    baseline_cysc > 1.24 ~ 3
+  )) %>%  
+  mutate_at(vars(cysc_cat), as.factor) %>% 
+    mutate(cysc_cat_75 = case_when(
+    baseline_cysc <= 1.24 ~ 0, 
+    baseline_cysc > 1.24 ~ 1
+  )) %>%  
+  mutate_at(vars(cysc_cat_75), as.factor)  %>%  
+  mutate(anydem_1 = case_when(
+    demdx_ff==1 | cinddx_f==1 ~ 1, 
+    TRUE ~ 0 )) %>% 
+    mutate_at(vars(anydem_1), as.factor) %>% 
+  mutate(dicho_race = case_when(
+    race=="White-NH" ~ 0, 
+    race=="Black-NH" ~ 1
+  )) %>%  
+  mutate(dicho_race_h = case_when(
+   race=="White-NH" ~ 0, 
+   race=="Hispanic" ~ 1
+  )) %>% 
+  mutate_at(vars(dicho_race), as.factor) %>% 
+  mutate_at(vars(dicho_race_h), as.factor) %>% 
+  mutate(int_cysc = case_when(
+    dicho_race==0 & cysc_cat_75==0 ~ 0, 
+    dicho_race==0 & cysc_cat_75==1 ~ 1,
+    dicho_race==1 & cysc_cat_75==0 ~ 2,
+    dicho_race==1 & cysc_cat_75==1 ~ 3
+  )) %>% 
+  mutate_at(vars(int_cysc), as.factor) %>%  
+  mutate(int_cysc_h = case_when(
+    dicho_race_h==0 & cysc_cat_75==0 ~ 0, 
+    dicho_race_h==0 & cysc_cat_75==1 ~ 1,
+    dicho_race_h==1 & cysc_cat_75==0 ~ 2,
+    dicho_race_h==1 & cysc_cat_75==1 ~ 3
+  )) %>% 
+  mutate_at(vars(int_cysc_h), as.factor)
+
+full_data_apoe <- full_data_apoe %>% 
+    mutate(cysc_race = case_when(
+      int_cysc==0 ~ "White & Low CysC",
+      int_cysc==1 ~ "White & High CysC",
+      int_cysc==2 ~ "Black & Low CysC",
+      int_cysc==3 ~ "Black & High CysC"
+    )) %>% 
+  mutate_at(vars(cysc_race), as.factor) %>% 
+    mutate(cysc_h = case_when(
+      int_cysc_h==0 ~ "White & Low CysC",
+      int_cysc_h==1 ~ "White & High CysC",
+      int_cysc_h==2 ~ "Hispanic & Low CysC",
+      int_cysc_h==3 ~ "Hispanic & High CysC"
+    )) %>% 
+    mutate_at(vars(cysc_h), as.factor) %>% 
+  mutate(baseline_tc_hdl=baseline_tc/baseline_hdl)
+
+
+#save(full_data_apoe, file = "Model_Data_CysC_APOE.RData") #/*HERE THE DATA WAS SAVED*/
+
+# Load data from APOE to export to STATA and calculate models 
+
+rm(list = ls())
+
+
+setwd("~/Documents/Dementia project /NIH grant/Data")
+source_dir <- "/Users/cesarhiggins/Documents/Dementia project /NIH grant/Data/" 
+
+load("Model_Data_CysC_APOE.RData")
+
+full_data_apoe <- full_data_apoe %>% 
+  mutate(smoke = case_when(
+    smoking== 0 ~ "Never Smoker",
+    smoking==1 ~ "Former Smoker",
+    smoking==2 ~ "Current Smoker"
+  )) 
+
+full_data_apoe <- full_data_apoe %>% 
+  mutate(hbpf = case_when(
+    hbp==0 ~ "No HPB", 
+    hbp==1 ~ "Yes HBP"
+  )) %>% 
+  mutate_at(vars(hbpf), as.character()) 
+
+# Export data to STATA for building Poisson Models with Robust Variance and Calculating RERI and CMAD
+
+#library(foreign)
+#write.dta(full_data_apoe, "Model_Data_CysC_APOE_ForSTATA.dta") 
+
+
+
+```
+
+
+# Prepare data for the expert model 
+
+```{r}
+
+rm(list = ls())
+
+setwd("~/Documents/Dementia project /NIH grant/Data")
+source_dir <- "/Users/cesarhiggins/Documents/Dementia project /NIH grant/Data/" 
+
+load("Model_Data_CysC.RData")
+
+load("hrs_democoggen_wide20200910.Rda") 
+
+myvars <- c("HHID", "PN","expert_dem_06", "expert_dem_08")
+
+expert_data <- dplyr::select(hrs0910,myvars)
+expert_data %>% 
+  dim()
+
+merged_expert <- left_join(full_data, expert_data, by = c("HHID" = "HHID", "PN" = "PN")) 
+
+merged_expert %>% 
+  dim()
+
+# Creating dementia expert variable for each wave 
+
+merged_expert <- merged_expert %>% 
+   mutate(expert_dem= case_when(
+    wave==2006 ~ expert_dem_06,
+    wave==2008 ~ expert_dem_08)) 
+
+table(merged_expert$expert_dem)
+table(merged_expert$demdx_ff)
+
+#save(merged_expert, file = "Model_Data_CysC_Expert.RData") #/*HERE THE DATA WAS SAVED*/
+
+# Export data to STATA for building Merged Models with Robust Variance and Calculating RERI and CMAD
+
+#load("Model_Data_CysC_Expert.RData")
+
+#library(foreign)
+#write.dta(merged_expert, "Model_Data_CysC_Expert_ForSTATA.dta") 
+
+```
+
+
+
+# Build data set for excluded sample 
+
+
+```{r}
+
+# Extract all biomarker data 
+
+rm(list = ls())
+setwd("~/Documents/Dementia project /NIH grant/Data")
+source_dir <- "/Users/cesarhiggins/Documents/Dementia project /NIH grant/Data/" 
+paste0(source_dir, "hrs_democoggen_wide20200910.Rda")
+load("hrs_democoggen_wide20200910.Rda") 
+
+load("biomk06.RData")
+load("biomk08.RData")
+biomk06 <- biomk06
+biomk08 <- biomk08
+
+myvars_bio_2006 <- c("HHID", "PN", "KA1C_ADJ", "KHDL_ADJ", "KTC_ADJ", "KCYSC_ADJ", "KCRP_ADJ") 
+myvars_bio_2008 <- c("HHID", "PN", "LA1C_ADJ", "LHDL_ADJ", "LTC_ADJ", "LCYSC_ADJ", "LCRP_ADJ") 
+
+biomk06_f <- dplyr::select(biomk06,myvars_bio_2006)  
+biomk08_f <- dplyr::select(biomk08,myvars_bio_2008)
+
+# Renaming Variables for each data set biomarker data 
+#2006 
+biomk06_baseline <- dplyr::rename(biomk06_f, baseline_a1c=KA1C_ADJ , baseline_hdl = KHDL_ADJ,  baseline_tc = KTC_ADJ, baseline_cysc = KCYSC_ADJ, baseline_crp = KCRP_ADJ)
+
+biomk06_baseline <- biomk06_baseline %>% 
+                    mutate(wave=2006)
+
+# 2008 
+biomk08_baseline <- dplyr::rename(biomk08_f, baseline_a1c = LA1C_ADJ, baseline_hdl = LHDL_ADJ, baseline_tc = LTC_ADJ, baseline_cysc = LCYSC_ADJ, baseline_crp = LCRP_ADJ)
+
+biomk08_baseline <- biomk08_baseline %>% 
+                    mutate(wave=2008)
+
+biomarker_final <- rbind(biomk06_baseline, biomk08_baseline) 
+
+# This data set should have 13,064 observation which is the original sample size of both DBS sample: the 2006 and 2008 combined into 1 file
+
+biomarker_final %>% 
+  dim()
+
+# Merge the biomarker final data with the HRS repository created by Erin
+
+merged_data_missing <- left_join(biomarker_final, hrs0910, by = c("HHID" = "HHID", "PN" = "PN")) 
+
+# Creating the Outcome Variable
+
+# Assigning Waves & Creating Outcome Variables 
+merged_data_missing <- merged_data_missing %>% 
+  mutate(AD_06 = case_when(
+    AD06==3 ~ 0, 
+    AD06==2 ~ 1,
+    AD06==1 ~ 2
+  )) %>% 
+  mutate(AD_08 = case_when(
+    AD08==3 ~ 0,
+    AD08==2 ~ 1, 
+    AD08==1 ~ 2
+  )) %>% 
+  mutate(demdx= case_when(
+    wave==2006 ~ AD_06,
+    wave==2008 ~ AD_08)) %>% 
+  mutate(age = wave-BIRTHYR) %>% 
+  mutate(education = SCHLYRS) %>% 
+  mutate(stroke = case_when(
+    wave==2006 ~ STROKE06,
+    wave==2008 ~ STROKE08
+  )) %>% 
+  mutate(hbp = case_when(
+    wave==2006 ~ R8HIBPE,
+    wave==2008 ~ R9HIBPE # had a mistake in here as R8HIBPE, just corrected it 
+  )) %>% 
+  mutate(t2db = case_when(
+    wave==2006 ~ R8DIABE,
+    wave==2008 ~ R9DIABE
+  )) %>% 
+  mutate(bmi = case_when(
+    wave==2006 ~ R8BMI,
+    wave==2008 ~ R9BMI
+  )) %>% 
+  mutate(smoking = case_when(
+    wave==2006 ~ smoke06,
+    wave==2008 ~ smoke08
+  )) %>% 
+  mutate(alcohol = case_when(
+    wave==2006 ~ R8DRINKN,
+    wave==2008 ~ R9DRINKN
+  )) %>% 
+  mutate(proxy = case_when(
+    wave==2006 ~ KA009,
+    wave==2008 ~ LA009,
+  )) %>% 
+  mutate(proxy_f= case_when(
+    proxy==1 ~ 1,
+    proxy==2 ~ 2, 
+    proxy==3 ~ 2
+  )) %>% 
+  mutate(totalscore= case_when(
+    wave==2006 ~ totscore06,
+    wave==2008 ~ totscore08
+  )) %>% 
+  mutate(race_f = case_when(
+    RACE==0 ~ "NA",
+    RACE==1 ~ "White",
+    RACE==2 ~ "Black",
+    RACE==7 ~ "Other")) %>% 
+  mutate(hispanic_f = case_when(
+      HISPANIC==1 | HISPANIC==2 | HISPANIC==3 ~ "Hispanic",
+      HISPANIC==5 ~ "Non-Hispanic",
+      HISPANIC==0 ~ "NA")) 
+
+
+merged_data_missing <- merged_data_missing  %>% 
+  mutate(race_f = na_if(race_f, "NA")) %>% 
+  mutate(hispanic_f = na_if(hispanic_f, "NA")) %>% 
+  mutate(race_ff = case_when(
+    race_f=="White" & hispanic_f=="Non-Hispanic" ~ "White-NH",
+    race_f=="Black" & hispanic_f=="Non-Hispanic" ~ "Black-NH",
+    race_f=="Other" & hispanic_f=="Non-Hispanic" ~ "Other-NH",
+    hispanic_f=="Hispanic" ~ "Hispanic")) %>% 
+  mutate(gender_f = case_when(
+    GENDER==1 ~ "Male",
+    GENDER==2 ~ "Female")) %>% 
+  mutate(edu = case_when(
+    DEGREE==0 | DEGREE==1 | DEGREE==2 ~ "HS or <",
+    DEGREE==3 | DEGREE==4 | DEGREE==9 ~ "College/Some",
+    DEGREE==5 | DEGREE==6 ~ "> College")) %>% 
+    mutate(race_ff = na_if(race_ff, "Other-NH")) %>% 
+   filter(race_ff!='NA')
+ 
+myvars_missing <- c("HHID", "PN","race_ff", "gender_f", "edu", "education", "wave", "age", "alcohol", "stroke", "hbp", "t2db", "bmi", "smoking", "alcohol", "totalscore", "baseline_crp", "baseline_hdl", "baseline_tc", "baseline_cysc", "baseline_a1c", "demdx") 
+
+
+merged_data_missing <- dplyr::select(merged_data_missing, myvars_missing)  
+
+merged_data_missing_nm <- merged_data_missing %>% na.omit()
+
+merged_data_missing_nm <- merged_data_missing_nm %>% 
+                          mutate(missing=0)
+
+myvars_missing_f <- c("HHID", "PN", "missing") 
+
+merged_data_missing_nm <- dplyr::select(merged_data_missing_nm, myvars_missing_f) 
+
+complete_data_mising <- left_join(merged_data_missing, merged_data_missing_nm, by = c("HHID" = "HHID", "PN" = "PN"))
+
+complete_data_mising <- complete_data_mising %>% 
+  mutate(missing_f = ifelse(is.na(missing), 1, 0))
+
+```
+
+
+# Missing Data Table 
+
+
+```{r}
+
+
+complete_data_mising <- complete_data_mising %>% 
+  mutate(smoke = case_when(
+    smoking== 0 ~ "Never Smoker",
+    smoking==1 ~ "Former Smoker",
+    smoking==2 ~ "Current Smoker"
+  )) 
+
+complete_data_mising <- complete_data_mising %>% 
+  mutate(hbpf = case_when(
+    hbp==0 ~ "No HPB", 
+    hbp==1 ~ "Yes HBP"
+  )) %>% 
+  mutate_at(vars(hbpf), as.character()) %>% 
+  mutate(baseline_tc_hdl=baseline_tc/baseline_hdl) %>% 
+    mutate(demdx_f = case_when(
+    demdx== 0 ~ "Normal",
+    demdx==1 ~ "CIND",
+    demdx==2 ~ "Dementia"
+  )) 
+
+
+myvars_missing <- c("HHID", "PN","race_ff", "gender_f", "edu", "education", "wave", "age", "alcohol", "stroke", "hbp", "t2db", "bmi", "smoking", "alcohol", "totalscore", "baseline_crp", "baseline_hdl", "baseline_cysc", "baseline_a1c", "demdx") 
+
+
+
+table1_data <- complete_data_mising %>%  
+  dplyr::select("demdx_f", "race_ff", "gender_f", "edu","education",  "age","alcohol", "smoke", "bmi", "hbpf", "baseline_cysc","baseline_a1c", "baseline_tc_hdl" , "wave" , "missing_f")
+
+table1_missing <- table1_data %>%
+  tbl_summary(
+    by = missing_f, missing = "no",
+    statistic = list(all_continuous() ~ "{mean} ({sd})",
+                     all_categorical() ~ "{n}  ({p}%)"),
+    digits = all_continuous() ~ 2,
+     label = list(demdx_f ~ "Cognition",
+                  race_ff ~ "Race",
+                  gender_f ~ "Gender", 
+                  edu ~ "Education Category",
+                  education ~ "Years of Education",
+                  age ~ "Age",
+                  alcohol ~ "Alcohol",
+                  smoke ~ "Smoking",
+                  bmi ~ "Body Mass Index",
+                  hbpf ~ "Hypertension" , 
+                  baseline_cysc ~ "Baseline Cystatin C",
+                 baseline_a1c ~ "Baseline HbA1C", 
+                 baseline_tc_hdl ~ "Baseline TC/HDL-C", 
+                 wave ~ "Wave"
+  )) %>%  
+  add_overall() %>% 
+  add_p(list(all_continuous() ~ "aov"),
+        pvalue_fun = ~style_pvalue(.x, digits = 3)) %>%  
+  bold_p() %>%  
+  bold_labels() 
+
+table1_missing %>% as_flex_table
+
+
+
+``` 
+
+
+
+

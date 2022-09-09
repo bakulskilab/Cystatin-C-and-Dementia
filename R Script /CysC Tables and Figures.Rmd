@@ -1,0 +1,281 @@
+---
+title: Tables for Dementia, CIND, and Cystatin-C  
+author: "César Higgins"
+date: '`r Sys.Date()`'
+output:   
+  html_document:
+    code_folding: hide
+    highlight: pygments
+    keep_md: no
+    number_sections: yes
+    smart: yes
+    theme: sandstone
+    toc: yes
+    toc_float: yes
+---
+
+```{r, include=FALSE}
+library(tidyverse)
+library(ggplot2)
+library(compareGroups)
+library(knitr)
+library(kableExtra)
+library(janitor)
+library(broom)
+library(lubridate)
+library(magrittr) # need to run every time you start R and want to use %>%
+library(kableExtra)
+library(gtsummary)
+library(foreign)
+library(gmodels)
+library(stringr)
+library(dplyr)  
+library(flextable) # needs this package for creating flexible tables for gtsummary tables and export to word 
+
+summarize = dplyr::summarize
+
+knitr::opts_chunk$set(
+  eval       = TRUE,    # whether to run code in code chunk
+  include    = TRUE,    # whether to include the chunk output
+  echo       = TRUE,   # Whether to show code chunk in final output
+  error      = TRUE,    # whether to display error messages
+  message    = FALSE,   # whether to preserve messages
+  warning    = FALSE,   # whether to preserve warnings
+  comment    = "#>",    # a character string to append at start
+                        # of each line of results in final document
+  tidy       = FALSE,   # whether to tidy code chunks for display
+  #dpi        = 96, 
+  #fig.width  = 6,       # consistent width for figures
+  #fig.asp    = 0.618,   # the golden ratio, can be adjusted in individual chunks
+  out.width  = "100%",   # controls the output size
+  fig.align  = "center" # give plot room to breathe
+)
+
+```
+
+
+```{r read data, results="hide"}
+rm(list = ls())
+setwd("~/Documents/Dementia project /NIH grant/Data")
+source_dir <- "/Users/cesarhiggins/Documents/Dementia project /NIH grant/Data/" 
+paste0(source_dir, "Model_Data_CysC.RData")
+load("Model_Data_CysC.RData")
+
+```
+
+
+
+# Tables {.tabset}
+
+## Table 1
+
+Sample characteristics by the percentiles of cystatin C distribution, United States Health and Retirement Study, 2006 and 2008
+
+```{r Table 1, eval=TRUE}
+
+# Smoking and hypertension make them factors for this table
+
+full_data <- full_data %>% 
+  mutate(smoke = case_when(
+    smoking== 0 ~ "Never Smoker",
+    smoking==1 ~ "Former Smoker",
+    smoking==2 ~ "Current Smoker"
+  )) 
+
+ full_data <- full_data %>% 
+  mutate(hbpf = case_when(
+    hbp==0 ~ "No HPB", 
+    hbp==1 ~ "Yes HBP"
+  )) %>% 
+   mutate(race_f = case_when(
+     race=="Black-NH" ~ "Black-NH",
+     race=="Hispanic" ~ "Hispanic", 
+     race=="White-NH" ~ "White-NH"
+   ))
+
+# Export data to STATA for building Poisson Models with Robust Variance and Calculating RERI and CMAD
+
+#save(full_data, file = "Model_Data_CysC_ForSTATA.RData")
+#load("Model_Data_CysC_ForSTATA.RData")
+#library(foreign)
+#write.dta(full_data, "Model_Data_CysC_ForSTATA.dta") 
+
+table1_data <- full_data %>%  
+  dplyr::select("cysc_cat", "demdx_f", "cinddx", "race_f", "gender", "edu", "age", "education", "alcohol", "smoke", "bmi", "hbpf", "baseline_a1c", "baseline_tc_hdl")
+
+
+
+table1_cysc <- table1_data %>%
+  tbl_summary(
+    by = cysc_cat, missing = "no",
+    statistic = list(all_continuous() ~ "{mean} ({sd})",
+                     all_categorical() ~ "{n}  ({p}%)"),
+    digits = all_continuous() ~ 2,
+     label = list(demdx_f ~ "Dementia",
+                cinddx ~ "CIND", 
+                gender ~ "Gender", 
+                race_f ~ "Race",
+                edu ~ "Education", 
+                education ~ "Years of Education", 
+                alcohol ~ "Alcohol", 
+                smoke ~ "Smoking Status", 
+                bmi ~ "Body Mass Index", 
+                age ~ "Age",
+                baseline_a1c ~ "Baseline A1C", 
+                baseline_tc_hdl ~ "Baseline TC/HDL-C",
+                hbpf ~ "High Blood"
+  )) %>%  
+  add_overall() %>% 
+  add_p(list(all_continuous() ~ "aov"),
+        pvalue_fun = ~style_pvalue(.x, digits = 3)) %>%  
+  bold_p() %>%  
+  bold_labels() 
+
+table1_cysc_f <- table1_cysc %>%  as_flex_table()
+
+table1_cysc_f
+
+```
+
+
+# Supplemental Tables {.tabset}
+
+
+## Supplemental Table 2 
+
+Distribution of sample characteristics by the joint effect of race/ethnicity (non-Hispanic Black vs non-Hispanic White) and high cystatin C levels (>1.24mg/L) in the United States Health and Retirement Study, waves 2006 and 2008
+
+```{r Table for blacks and CysC, eval=TRUE}
+
+table1a_data <- full_data %>%  
+  dplyr::select("cysc_race", "demdx_f", "cinddx", "gender", "edu", "age", "education", "alcohol", "smoke", "bmi", "hbpf", "baseline_a1c", "baseline_tc_hdl") 
+
+table1a_cysc <- table1a_data %>% 
+tbl_summary(
+    by = cysc_race, missing = "no",
+    statistic = list(all_continuous() ~ "{mean} ({sd})",
+                     all_categorical() ~ "{n}  ({p}%)"),
+    digits = all_continuous() ~ 2,
+   label = list(demdx_f ~ "Dementia",
+                cinddx ~ "CIND", 
+                gender ~ "Gender", 
+                edu ~ "Education", 
+                education ~ "Years of Education", 
+                alcohol ~ "Alcohol", 
+                smoke ~ "Smoking Status", 
+                bmi ~ "Body Mass Index", 
+                age ~ "Age",
+                hbpf ~ "Hypertension",
+                baseline_a1c ~ "Baseline A1C", 
+                baseline_tc_hdl ~ "Baseline TC/HDL-C"
+  )) %>%  
+  add_overall() %>% 
+  add_p(list(all_continuous() ~ "aov"),
+        pvalue_fun = ~style_pvalue(.x, digits = 3)) %>%  
+  bold_p() %>%  
+  bold_labels() 
+
+table1a_cysc %>% as_flex_table
+
+```
+
+
+## Supplemental Table 3 
+
+Distribution of sample characteristics by the joint effect of ethnicity (Hispanic vs non-Hispanic White) and high cystatin C levels (>1.24mg/L) in the United States Health and Retirement Study, waves 2006 and 2008
+
+```{r Table for Hispanics and CysC, eval=TRUE}
+
+table1b_data <- full_data %>%  
+  dplyr::select("cysc_h", "demdx_f", "cinddx","gender", "edu", "age", "education", "alcohol", "smoke", "bmi", "hbpf", "baseline_a1c", "baseline_tc_hdl")
+
+table1b_cysc <- table1b_data %>%
+  tbl_summary(
+    by = cysc_h, missing = "no",
+    statistic = list(all_continuous() ~ "{mean} ({sd})",
+                     all_categorical() ~ "{n}  ({p}%)"),
+    digits = all_continuous() ~ 2,
+   label = list(demdx_f ~ "Dementia",
+                cinddx ~ "CIND", 
+                gender ~ "Gender", 
+                edu ~ "Education", 
+                education ~ "Years of Education", 
+                alcohol ~ "Alcohol", 
+                smoke ~ "Smoking Status", 
+                bmi ~ "Body Mass Index", 
+                age ~ "Age",
+                hbpf ~ "Hypertension",
+                baseline_a1c ~ "Baseline A1C", 
+                baseline_tc_hdl ~ "Baseline TC/HDL-C"
+  )) %>%  
+  add_overall() %>% 
+  add_p(list(all_continuous() ~ "aov"),
+        pvalue_fun = ~style_pvalue(.x, digits = 3)) %>%  
+  bold_p() %>%  
+  bold_labels() 
+
+table1b_cysc %>% as_flex_table
+
+
+
+```
+
+
+
+# Figures {.tabset}
+
+## Density Plot 
+
+Distribution of natural logarithm transformation of cystatin C using a Kernel density plot. The 75th percentile (cystatin C serum levels > 1.24mg/L) is indicated by the dotted line. 
+
+```{r, eval=TRUE}
+
+full_data <- full_data %>%  
+  mutate(dem_plot = case_when(
+    demdx_ff==0 ~ 0,
+    demdx_ff==1 ~ 1
+  )) 
+
+
+summary_data <-  full_data %>% 
+  summarize(top_p = log(quantile(baseline_cysc, probs=0.75, na.rm=TRUE)))%>% 
+  na.omit() 
+
+# Density Plot Figure
+
+cysc <- ggplot(full_data, aes(x=log(baseline_cysc))) +
+  geom_density(alpha=0.8, fill="lightblue") + 
+geom_vline(data=summary_data, aes(xintercept=top_p), linetype="dashed") +
+  labs(title="Baseline Cystatin C",x="Natural Log of Cystatin C (mg/L)", y = "Density") +
+  theme_classic()
+
+cysc
+
+
+```
+
+## Plot of predicted probabilities 
+
+
+Marginal predicted probabilities of high cystatin C (>1.24mg/L) stratified by race/ethnicity in different age groups, in the Health and Retirement Study waves 2006 & 2008.
+
+```{r}
+
+library(readxl)
+probabilities <- read_excel("~/Documents/Dementia project /NIH grant/Data/probabilities.xlsx")
+View(probabilities)  
+
+legend_title <- "Race/Ethnicity"
+
+p_7 <- ggplot(probabilities, aes(x=age_group, y=predicted_p, group=Race, color=Race))+ 
+    geom_errorbar(aes(ymin=l_ci, ymax=u_ci), width=.05, 
+    position=position_dodge(0.03)) +
+    geom_line(aes(linetype=Race)) + 
+    geom_point(aes(shape=Race))+
+    labs(title="Predictive Margins with 95% CIs",x= "Age Groups", y ="Predicted Probability of High Cystatin C")+
+  scale_color_brewer(palette="Paired") +
+    theme(text = element_text(size = 16))
+
+p_7 
+
+```

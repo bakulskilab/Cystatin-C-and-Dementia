@@ -2,6 +2,11 @@
 
 ## Title: Decomposing Interaction and Mediating Effects of Race/Ethnicity and Circulating Cystatin C on Cognitive Status in the United States Health and Retirement Study
 
+## Citation Information
+
+
+This Github repository contains the data management and analytic scripts to produce the following manuscript:[Decomposing Interaction and Mediating Effects of Race/Ethnicity and Circulating Cystatin C on Cognitive Status in the United States Health and Retirement Study](https://www.medrxiv.org/content/10.1101/2022.09.09.22279743v1)
+
 ## Abstract
 
 Background and objectives: Elevated circulating cystatin C is associated with cognitive impairment in non-Hispanic Whites, but its role in racial disparities in dementia is understudied. In a nationally representative sample of older non-Hispanic White, non-Hispanic Black, and Hispanic adults in the United States, we use mediation-interaction analysis to understand how racial disparities in the cystatin C physiological pathway may contribute to racial disparities in prevalent dementia.
@@ -12,9 +17,15 @@ Results: Overall, elevated cystatin C was associated with dementia (prevalence r
 
 Discussion: Elevated cystatin C was associated with dementia prevalence. Our mediation-interaction decomposition analysis suggested that the effect of elevated cystatin C on the racial disparity might be moderated by race/ethnicity, which indicates that the racialization process affects not only the distribution of circulating cystatin C across minoritized racial groups, but also the strength of association between the biomarker and dementia prevalence. These results provide evidence that cystatin C is associated with adverse brain health and this effect is larger than expected for individuals racialized as minorities had they been racialized and treated as non-Hispanic White.
 
+## Funding
+This work was supported by the National Institutes of Health (grant numbers R01 AG055406, R01 AG067592, 3R01 AG067592-01S1, P30 AG072931). The Health and Retirement Study is sponsored by the National Institute on Aging (U01 AG009740) and is conducted at the Institute for Social Research, University of Michigan. CH was supported by 3R01 AG067592-01S1 and the University of Michigan Rackham Merit Fellowship program.
+
 ## Content
 
 This repo contains the R script used for data management, and data analysis of the manuscript. We used STATA for our main models and analysis of measures of interaction in the additive scale, and mediation-interaction decomposition analysis. We built our own code in STATA to calculate measures of interaction in the additive scale and the mediation-interaction decomposition analysis. We decided not rely on existing packages (i.e., STATA med4way: https://pubmed.ncbi.nlm.nih.gov/30452641/) because this package does not accommodate for certain specification of our model. For example, the robust variance estimation option for poisson regression analysis. We do not provide the HRS data. But, Health and Retirement Study survey data are publicly available (https://hrs.isr.umich.edu/data-products), and genetic data are available through dbGaP (https://dbgap.ncbi.nlm.nih.gov; phs000428.v2.p2)
 Original Article
 
 A preprint version of this article can be found at medRxiv (https://medrxiv.org/cgi/content/short/2022.09.09.22279743v1)
+
+## Script Files
+

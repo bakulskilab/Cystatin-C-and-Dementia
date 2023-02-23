@@ -2,8 +2,6 @@
 
 ## Title: Decomposing Interaction and Mediating Effects of Race/Ethnicity and Circulating Cystatin C on Cognitive Status in the United States Health and Retirement Study
 
-## Citation Information
-
 
 This Github repository contains the data management and analytic scripts to produce the following manuscript:[Decomposing Interaction and Mediating Effects of Race/Ethnicity and Circulating Cystatin C on Cognitive Status in the United States Health and Retirement Study](https://www.medrxiv.org/content/10.1101/2022.09.09.22279743v1)
 
@@ -28,4 +26,9 @@ Original Article
 A preprint version of this article can be found at medRxiv (https://medrxiv.org/cgi/content/short/2022.09.09.22279743v1)
 
 ## Script Files
+*R script* folder contains R code files for data cleaining and descriptive tables and figures
+
+*STATA Output* folder contains STATA result output from main analysis
+
+*STATA Script* folder contains STATA code files for main analysis and model fitting
 
